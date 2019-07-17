@@ -1,6 +1,11 @@
+/* eslint-disable react/default-props-match-prop-types */
+/* eslint-disable react/require-default-props */
+/* eslint-disable no-return-assign */
+/* eslint-disable no-underscore-dangle */
 // @flow
 
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   VirtualizedList,
   View,
@@ -44,12 +49,15 @@ const _stateFromProps = ({ numColumns, data, getHeightForItem }) => {
 export type Props = {
   data: Array<any>,
   numColumns: number,
-  renderItem: ({ item: any, index: number, column: number }) => ?React.Element<
-    any,
-  >,
+  renderItem: ({
+    item: any,
+    index: number,
+    column: number,
+  }) => ?React.Element<any>,
   getHeightForItem: ({ item: any, index: number }) => number,
   ListHeaderComponent?: ?React.ComponentType<any>,
   ListEmptyComponent?: ?React.ComponentType<any>,
+  ListFooterComponent?: ?React.ComponentType<any>,
   /**
    * Used to extract a unique key for a given item at the specified index. Key is used for caching
    * and as the react key to track item re-ordering. The default extractor checks `item.key`, then
@@ -77,20 +85,21 @@ export type Props = {
    */
   onRefresh?: ?Function,
 };
+
 type State = {
   columns: Array<Column>,
 };
 
 // This will get cloned and added a bunch of props that are supposed to be on
-// ScrollView so we wan't to make sure we don't pass them over (especially
+// ScrollView so we want to make sure we don't pass them over (especially
 // onLayout since it exists on both).
-class FakeScrollView extends React.Component<{ style?: any, children?: any }> {
+class FakeScrollView extends React.PureComponent<{
+  style?: any,
+  children?: any,
+}> {
   render() {
-    return (
-      <View style={this.props.style}>
-        {this.props.children}
-      </View>
-    );
+    const { style, children } = this.props;
+    return <View style={style}>{children}</View>;
   }
 }
 
@@ -102,13 +111,13 @@ export default class MasonryList extends React.Component<Props, State> {
       if (props.onRefresh && props.refreshing != null) {
         return (
           <ScrollView
-            {...props}
             refreshControl={
               <RefreshControl
                 refreshing={props.refreshing}
                 onRefresh={props.onRefresh}
               />
             }
+            {...props}
           />
         );
       }
@@ -117,13 +126,12 @@ export default class MasonryList extends React.Component<Props, State> {
   };
 
   state = _stateFromProps(this.props);
-  _listRefs: Array<?VirtualizedList> = [];
-  _scrollRef: ?ScrollView;
-  _endsReached = 0;
 
-  componentWillReceiveProps(newProps: Props) {
-    this.setState(_stateFromProps(newProps));
-  }
+  _listRefs: Array<?VirtualizedList> = [];
+
+  _scrollRef: ?ScrollView;
+
+  _endReached = false;
 
   getScrollResponder() {
     if (this._scrollRef && this._scrollRef.getScrollResponder) {
@@ -139,19 +147,14 @@ export default class MasonryList extends React.Component<Props, State> {
     return findNodeHandle(this._scrollRef);
   }
 
-  scrollToOffset({ offset, animated }: any) {
-    if (this._scrollRef) {
-      this._scrollRef.scrollTo({ y: offset, animated });
-    }
-  }
-
-  _onLayout = event => {
+  _onLayout = (event: Object) => {
     this._listRefs.forEach(
       list => list && list._onLayout && list._onLayout(event),
     );
   };
 
-  _onContentSizeChange = (width, height) => {
+  _onContentSizeChange = (width: number, height: number) => {
+    this._endReached = false;
     this._listRefs.forEach(
       list =>
         list &&
@@ -160,36 +163,44 @@ export default class MasonryList extends React.Component<Props, State> {
     );
   };
 
-  _onScroll = event => {
-    if (this.props.onScroll) {
-      this.props.onScroll(event);
+  _onScroll = (event: Object) => {
+    const { onScroll } = this.props;
+
+    if (onScroll) {
+      onScroll(event);
     }
     this._listRefs.forEach(
       list => list && list._onScroll && list._onScroll(event),
     );
   };
 
-  _onScrollBeginDrag = event => {
-    if (this.props.onScrollBeginDrag) {
-      this.props.onScrollBeginDrag(event);
+  _onScrollBeginDrag = (event: Object) => {
+    const { onScrollBeginDrag } = this.props;
+
+    if (onScrollBeginDrag) {
+      onScrollBeginDrag(event);
     }
     this._listRefs.forEach(
       list => list && list._onScrollBeginDrag && list._onScrollBeginDrag(event),
     );
   };
 
-  _onScrollEndDrag = event => {
-    if (this.props.onScrollEndDrag) {
-      this.props.onScrollEndDrag(event);
+  _onScrollEndDrag = (event: Object) => {
+    const { onScrollEndDrag } = this.props;
+
+    if (onScrollEndDrag) {
+      onScrollEndDrag(event);
     }
     this._listRefs.forEach(
       list => list && list._onScrollEndDrag && list._onScrollEndDrag(event),
     );
   };
 
-  _onMomentumScrollEnd = event => {
-    if (this.props.onMomentumScrollEnd) {
-      this.props.onMomentumScrollEnd(event);
+  _onMomentumScrollEnd = (event: Object) => {
+    const { onMomentumScrollEnd } = this.props;
+
+    if (onMomentumScrollEnd) {
+      onMomentumScrollEnd(event);
     }
     this._listRefs.forEach(
       list =>
@@ -197,8 +208,22 @@ export default class MasonryList extends React.Component<Props, State> {
     );
   };
 
+  _onEndReached = (info: { distanceFromEnd: number }) => {
+    if (this._endReached) {
+      return;
+    }
+    this._endReached = true;
+    const { onEndReached } = this.props;
+    if (onEndReached) {
+      Promise.resolve(onEndReached(info)).then(() => {
+        this._endReached = false;
+      });
+    }
+  };
+
   _getItemLayout = (columnIndex, rowIndex) => {
-    const column = this.state.columns[columnIndex];
+    const { columns } = this.state;
+    const column = columns[columnIndex];
     let offset = 0;
     for (let ii = 0; ii < rowIndex; ii += 1) {
       offset += column.heights[ii];
@@ -208,21 +233,34 @@ export default class MasonryList extends React.Component<Props, State> {
 
   _renderScrollComponent = () => <FakeScrollView style={styles.column} />;
 
-  _getItemCount = data => data.length;
+  _getItemCount = (data: any[]) => data.length;
 
-  _getItem = (data, index) => data[index];
+  _getItem = (data: any[], index: number) => data[index];
 
   _captureScrollRef = ref => (this._scrollRef = ref);
+
+  scrollToOffset({ offset, animated }: any) {
+    if (this._scrollRef) {
+      this._scrollRef.scrollTo({ y: offset, animated });
+    }
+  }
+
+  // TODO: Update to reflect props change
+  // eslint-disable-next-line camelcase
+  UNSAFE_componentWillReceiveProps(newProps: Props) {
+    this.setState(_stateFromProps(newProps));
+  }
 
   render() {
     const {
       renderItem,
       ListHeaderComponent,
       ListEmptyComponent,
+      ListFooterComponent,
       keyExtractor,
-      onEndReached,
       ...props
     } = this.props;
+
     let headerElement;
     if (ListHeaderComponent) {
       headerElement = <ListHeaderComponent />;
@@ -231,33 +269,44 @@ export default class MasonryList extends React.Component<Props, State> {
     if (ListEmptyComponent) {
       emptyElement = <ListEmptyComponent />;
     }
+    let footerElement;
+    if (ListFooterComponent) {
+      footerElement = <ListFooterComponent />;
+    }
+
+    const { columns } = this.state;
 
     const content = (
       <View style={styles.contentContainer}>
-        {this.state.columns.map(col =>
+        {columns.map(col => (
           <VirtualizedList
             {...props}
             ref={ref => (this._listRefs[col.index] = ref)}
             key={`$col_${col.index}`}
+            listKey={`$col_${col.index}`}
             data={col.data}
             getItemCount={this._getItemCount}
             getItem={this._getItem}
             getItemLayout={(data, index) =>
-              this._getItemLayout(col.index, index)}
+              this._getItemLayout(col.index, index)
+            }
             renderItem={({ item, index }) =>
-              renderItem({ item, index, column: col.index })}
+              renderItem({ item, index, column: col.index })
+            }
             renderScrollComponent={this._renderScrollComponent}
             keyExtractor={keyExtractor}
-            onEndReached={onEndReached}
-            onEndReachedThreshold={this.props.onEndReachedThreshold}
+            onEndReached={this._onEndReached}
+            // onEndReachedThreshold={this.props.onEndReachedThreshold}
             removeClippedSubviews={false}
-          />,
-        )}
+          />
+        ))}
       </View>
     );
 
+    const { renderScrollComponent, data } = this.props;
+
     const scrollComponent = React.cloneElement(
-      this.props.renderScrollComponent(this.props),
+      renderScrollComponent(this.props),
       {
         ref: this._captureScrollRef,
         removeClippedSubviews: false,
@@ -269,7 +318,8 @@ export default class MasonryList extends React.Component<Props, State> {
         onMomentumScrollEnd: this._onMomentumScrollEnd,
       },
       headerElement,
-      emptyElement && this.props.data.length === 0 ? emptyElement : content,
+      emptyElement && data.length === 0 ? emptyElement : content,
+      footerElement,
     );
 
     return scrollComponent;
