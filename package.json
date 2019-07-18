@@ -1,6 +1,6 @@
 {
   "name": "@fisherwise/masonry-list",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "main": "./src/MasonryList.js",
   "private": false,
   "repository": {
