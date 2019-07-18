@@ -1,33 +1,37 @@
-module.exports = {
+{
+    "parser": "babel-eslint",
     "env": {
+        "browser": true,
         "es6": true,
+        "node": true,
         "react-native/react-native": true
     },
     "extends": [
         "airbnb",
         "eslint:recommended",
-        "anf"
+        "plugin:react/recommended",
+        "plugin:react-native/all"
     ],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
-    'parser': 'babel-eslint',
     "parserOptions": {
         "ecmaFeatures": {
             "jsx": true
         },
-        "ecmaVersion": 2018,
-        "sourceType": "module"
+        "ecmaVersion": 2018
     },
     "plugins": [
         "react",
         "react-native"
     ],
     "rules": {
-        "react/forbid-prop-types": [0, { "forbid": ["any", "array", "object"] }],
+        "camelcase": "off",
         "react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx"] }],
-        "react/prop-types": 0,
+        "no-underscore-dangle": "off",
+        "react/default-props-match-prop-types": "off",
+        "react/require-default-props": "off",
         "no-use-before-define": ["error", { "variables": false }] // Temporarily disable this. See https://github.com/Intellicode/eslint-plugin-react-native/issues/22
     }
-};
+}

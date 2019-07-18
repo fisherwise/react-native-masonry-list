@@ -1,11 +1,6 @@
-/* eslint-disable react/default-props-match-prop-types */
-/* eslint-disable react/require-default-props */
-/* eslint-disable no-return-assign */
-/* eslint-disable no-underscore-dangle */
 // @flow
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   VirtualizedList,
   View,
@@ -108,7 +103,7 @@ export default class MasonryList extends React.Component<Props, State> {
     scrollEventThrottle: 50,
     numColumns: 1,
     renderScrollComponent: (props: Props) => {
-      if (props.onRefresh && props.refreshing != null) {
+      if (props.onRefresh != null && props.refreshing != null) {
         return (
           <ScrollView
             refreshControl={
@@ -237,7 +232,9 @@ export default class MasonryList extends React.Component<Props, State> {
 
   _getItem = (data: any[], index: number) => data[index];
 
-  _captureScrollRef = ref => (this._scrollRef = ref);
+  _captureScrollRef = ref => {
+    this._scrollRef = ref;
+  };
 
   scrollToOffset({ offset, animated }: any) {
     if (this._scrollRef) {
@@ -246,7 +243,6 @@ export default class MasonryList extends React.Component<Props, State> {
   }
 
   // TODO: Update to reflect props change
-  // eslint-disable-next-line camelcase
   UNSAFE_componentWillReceiveProps(newProps: Props) {
     this.setState(_stateFromProps(newProps));
   }
@@ -281,7 +277,9 @@ export default class MasonryList extends React.Component<Props, State> {
         {columns.map(col => (
           <VirtualizedList
             {...props}
-            ref={ref => (this._listRefs[col.index] = ref)}
+            ref={ref => {
+              this._listRefs[col.index] = ref;
+            }}
             key={`$col_${col.index}`}
             listKey={`$col_${col.index}`}
             data={col.data}
@@ -327,10 +325,10 @@ export default class MasonryList extends React.Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    flexDirection: 'row',
-  },
   column: {
     flex: 1,
+  },
+  contentContainer: {
+    flexDirection: 'row',
   },
 });
